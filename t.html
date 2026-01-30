@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeGuru | Os.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --bg-dark: #050505;
+            --bg-panel: #0A0A0A;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #EDEDED;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+        }
+
+        .tool-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tool-card:hover {
+            background: #141414;
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 2px;
+        }
+        
+        .video-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
+        }
+
+        /* Mirror local video only, not screen share */
+        .mirror-mode {
+            transform: scaleX(-1);
+        }
+
+        video {
+            object-fit: cover;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 1024px) {
+            .mobile-sidebar-enter {
+                transform: translateX(0%);
+            }
+            .mobile-sidebar-exit {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col selection:bg-white/20">
+
+    <!-- Header -->
+    <header class="h-14 border-b border-white/5 flex items-center justify-between px-4 z-20 bg-[#050505] shrink-0">
+        <div class="flex items-center gap-6">
+            <div class="font-semibold tracking-tighter text-sm flex items-center gap-2.5">
+                <div class="w-6 h-6 rounded-lg bg-gradient-to-tr from-white to-neutral-400 flex items-center justify-center text-black">
+                    <iconify-icon icon="solar:home-smile-linear" width="14"></iconify-icon>
+                </div>
+                <span>HomeGuru | Os.</span>
+            </div>
+            
+            <!-- Context Pill -->
+            <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 hover:border-white/10 transition-colors cursor-default">
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-xs text-neutral-400 font-medium">Advanced Physics 101</span>
+            </div>
+        </div>
+
+        <!-- Center Clock -->
+        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
+            <span class="text-xs font-mono text-neutral-500 tracking-wider" id="realtime-clock">--:--:--</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 text-neutral-400 hover:text-white">
+                <iconify-icon icon="solar:hamburger-menu-linear" width="20"></iconify-icon>
+            </button>
+            <div class="w-8 h-8 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" alt="User" class="w-full h-full object-cover opacity-80">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Video Stage -->
+        <main class="flex-1 relative flex flex-col bg-[#050505] p-2 md:p-3 gap-3 overflow-hidden">
+            
+            <!-- Main Stage (Active Speaker / Pinned / Shared Screen) -->
+            <div id="main-stage" class="flex-1 rounded-xl border border-white/5 overflow-hidden relative group bg-[#080808] flex flex-col justify-center items-center transition-all">
+                
+                <!-- Dynamic Content: Video (Screen/Webcam) -->
+                <video id="main-stage-video" autoplay playsinline class="absolute inset-0 w-full h-full object-contain hidden z-10"></video>
+                
+                <!-- Dynamic Content: Image (For pinning static participants) -->
+                <img id="main-stage-image" src="" class="absolute inset-0 w-full h-full object-contain hidden z-10 bg-black" />
+
+                <!-- Unpin Button (Visible when something is pinned) -->
+                <button id="btn-unpin" onclick="unpinContent()" class="absolute top-4 left-4 z-50 glass-panel px-3 py-1.5 rounded-lg text-xs font-medium text-white hover:bg-white/10 transition-all hidden flex items-center gap-2">
+                    <iconify-icon icon="solar:pin-bold" class="text-emerald-500"></iconify-icon>
+                    Unpin Content
+                </button>
+
+                <!-- Default Placeholder (Empty State) -->
+                <div id="stage-placeholder" class="absolute inset-0 flex flex-col items-center justify-center opacity-40 transition-opacity">
+                    <div class="w-20 h-20 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-center mb-4">
+                        <iconify-icon icon="solar:presentation-graph-linear" width="40" class="text-neutral-500"></iconify-icon>
+                    </div>
+                    <h3 class="text-sm text-neutral-400 font-medium">Dr. Miller is sharing screen</h3>
+                </div>
+
+                <!-- Floating Canvas Tools -->
+                <div class="absolute top-4 left-4 glass-panel px-2 py-1.5 rounded-lg flex flex-col gap-1 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity z-20" id="canvas-tools">
+                    <button class="p-2 hover:bg-white/10 rounded-md text-neutral-400 hover:text-white transition-colors" title="Pen"><iconify-icon icon="solar:pen-linear" width="16"></iconify-icon></button>
+                    <button class="p-2 hover:bg-white/10 rounded-md text-neutral-400 hover:text-white transition-colors" title="Eraser"><iconify-icon icon="solar:eraser-linear" width="16"></iconify-icon></button>
+                    <button class="p-2 hover:bg-white/10 rounded-md text-neutral-400 hover:text-white transition-colors" title="Text"><iconify-icon icon="solar:text-square-linear" width="16"></iconify-icon></button>
+                </div>
+
+                <!-- Network Status -->
+                <div class="absolute top-4 right-4 flex items-center gap-2 z-20">
+                    <div class="glass-panel px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg">
+                        <iconify-icon icon="solar:signal-linear" class="text-emerald-500" width="14"></iconify-icon>
+                        <span class="text-[10px] font-medium text-neutral-400">HD • 45ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants Strip (Responsive) -->
+            <div class="h-28 md:h-36 flex gap-3 overflow-x-auto scrollbar-hide pb-1 shrink-0">
+                
+                <!-- Local User (Real Camera) -->
+                <div class="aspect-video h-full rounded-lg bg-neutral-900 border border-white/10 relative overflow-hidden flex-shrink-0 group hover:border-white/30 transition-colors">
+                    <video id="localVideo" autoplay muted playsinline class="w-full h-full bg-black mirror-mode"></video>
+                    
+                    <!-- Video Off Placeholder -->
+                    <div id="camera-off-placeholder" class="absolute inset-0 bg-[#111] flex items-center justify-center hidden">
+                        <div class="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center">
+                            <iconify-icon icon="solar:user-linear" class="text-neutral-500"></iconify-icon>
+                        </div>
+                    </div>
+
+                    <!-- Pin Overlay -->
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                        <button onclick="pinLocalUser()" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform" title="Pin yourself">
+                            <iconify-icon icon="solar:pin-linear" width="18"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <div class="absolute bottom-0 inset-x-0 p-2 video-overlay flex justify-between items-end z-10">
+                        <span class="text-[10px] font-medium text-white/90">You</span>
+                        <div class="flex gap-1">
+                            <iconify-icon id="mic-status-icon" icon="solar:microphone-3-linear" class="text-emerald-400 text-xs hidden"></iconify-icon>
+                            <iconify-icon id="mic-off-icon" icon="solar:microphone-off-linear" class="text-red-400 text-xs hidden"></iconify-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participant 1 -->
+                <div class="aspect-video h-full rounded-lg bg-neutral-900 border border-white/10 relative overflow-hidden flex-shrink-0 group hover:border-white/30 transition-colors">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop" class="w-full h-full object-cover opacity-80" alt="Student">
+                    
+                    <!-- Pin Overlay -->
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                        <button onclick="pinImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&h=800&fit=crop')" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform" title="Pin Sarah">
+                            <iconify-icon icon="solar:pin-linear" width="18"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <div class="absolute bottom-0 inset-x-0 p-2 video-overlay flex justify-between items-end">
+                        <span class="text-[10px] font-medium text-white/90">Sarah J.</span>
+                        <iconify-icon icon="solar:microphone-off-linear" class="text-red-400 text-xs"></iconify-icon>
+                    </div>
+                </div>
+
+                <!-- Participant 2 -->
+                <div class="aspect-video h-full rounded-lg bg-neutral-900 border border-white/10 relative overflow-hidden flex-shrink-0 group hover:border-white/30 transition-colors">
+                    <div class="w-full h-full flex items-center justify-center bg-[#111]">
+                        <span class="text-xs font-medium text-neutral-500 tracking-tight">DK</span>
+                    </div>
+                    <div class="absolute top-2 right-2 bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded text-[9px] border border-blue-500/20 flex items-center gap-1">
+                        <iconify-icon icon="solar:hand-shake-linear"></iconify-icon> Hand Up
+                    </div>
+
+                    <!-- Pin Overlay -->
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                        <button onclick="pinImage('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1200&h=800&fit=crop')" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform" title="Pin David">
+                            <iconify-icon icon="solar:pin-linear" width="18"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <div class="absolute bottom-0 inset-x-0 p-2 video-overlay flex justify-between items-end">
+                        <span class="text-[10px] font-medium text-white/90">David Kim</span>
+                        <div class="flex gap-0.5 items-end h-2.5">
+                            <div class="w-0.5 bg-emerald-400 h-1.5 animate-pulse"></div>
+                            <div class="w-0.5 bg-emerald-400 h-2.5 animate-pulse"></div>
+                            <div class="w-0.5 bg-emerald-400 h-1 animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participant 3 -->
+                <div class="aspect-video h-full rounded-lg bg-neutral-900 border border-white/10 relative overflow-hidden flex-shrink-0 group hover:border-white/30 transition-colors">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop" class="w-full h-full object-cover opacity-80" alt="Student">
+                    
+                     <!-- Pin Overlay -->
+                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                        <button onclick="pinImage('https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=1200&h=800&fit=crop')" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform" title="Pin Marcus">
+                            <iconify-icon icon="solar:pin-linear" width="18"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <div class="absolute bottom-0 inset-x-0 p-2 video-overlay flex justify-between items-end">
+                        <span class="text-[10px] font-medium text-white/90">Marcus R.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Dock Controls -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel rounded-2xl p-1.5 flex items-center gap-1 shadow-2xl z-30 transition-all duration-300">
+                
+                <!-- Mic Toggle -->
+                <button id="btn-mic" onclick="toggleMic()" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all border border-white/5 group relative">
+                    <iconify-icon id="icon-mic" icon="solar:microphone-3-linear" width="20"></iconify-icon>
+                    <span class="absolute -top-10 left-1/2 -translate-x-1/2 bg-neutral-900 text-neutral-400 text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-white/10 pointer-events-none">Mute</span>
+                </button>
+
+                <!-- Camera Toggle -->
+                <button id="btn-cam" onclick="toggleCam()" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all border border-white/5 group relative">
+                    <iconify-icon id="icon-cam" icon="solar:videocamera-record-linear" width="20"></iconify-icon>
+                    <span class="absolute -top-10 left-1/2 -translate-x-1/2 bg-neutral-900 text-neutral-400 text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-white/10 pointer-events-none">Stop Video</span>
+                </button>
+                
+                <div class="w-px h-5 bg-white/10 mx-1"></div>
+
+                <!-- Screen Share Button -->
+                <button id="btn-share" onclick="toggleScreenShare()" class="w-10 h-10 rounded-xl hover:bg-white/10 flex items-center justify-center text-white transition-all group relative">
+                    <iconify-icon id="icon-share" icon="solar:screencast-2-linear" width="20"></iconify-icon>
+                    <span class="absolute -top-10 left-1/2 -translate-x-1/2 bg-neutral-900 text-neutral-400 text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-white/10 pointer-events-none whitespace-nowrap">Share Screen</span>
+                </button>
+                
+                <button class="w-10 h-10 rounded-xl hover:bg-white/10 flex items-center justify-center text-white transition-all group relative">
+                    <iconify-icon icon="solar:hand-shake-linear" width="20"></iconify-icon>
+                </button>
+                
+                <button class="w-10 h-10 rounded-xl hover:bg-white/10 flex items-center justify-center text-white transition-all group relative">
+                    <iconify-icon icon="solar:smile-circle-linear" width="20"></iconify-icon>
+                </button>
+
+                <div class="w-px h-5 bg-white/10 mx-1"></div>
+
+                <button onclick="window.location.reload()" class="px-4 h-9 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-medium border border-red-500/20 transition-all ml-1">
+                    Leave
+                </button>
+            </div>
+        </main>
+
+        <!-- Right Sidebar (Collapsible on mobile) -->
+        <aside id="sidebar" class="fixed inset-y-0 right-0 w-80 border-l border-white/5 bg-[#050505] flex flex-col z-40 transform translate-x-full lg:translate-x-0 lg:relative transition-transform duration-300 ease-in-out">
+            
+            <!-- Mobile Sidebar Header -->
+            <div class="lg:hidden h-14 border-b border-white/5 flex items-center justify-between px-4">
+                <span class="text-sm font-semibold">Menu</span>
+                <button onclick="toggleMobileSidebar()" class="text-neutral-400"><iconify-icon icon="solar:close-circle-linear" width="20"></iconify-icon></button>
+            </div>
+
+            <!-- Tab Headers -->
+            <div class="flex border-b border-white/5 shrink-0">
+                <button onclick="switchTab('chat')" id="tab-chat" class="flex-1 py-3 text-xs font-medium border-b-2 border-white text-white bg-white/5 transition-all">Chat</button>
+                <button onclick="switchTab('people')" id="tab-people" class="flex-1 py-3 text-xs font-medium border-b-2 border-transparent text-neutral-500 hover:text-neutral-300 transition-all">People (24)</button>
+                <button onclick="switchTab('tools')" id="tab-tools" class="flex-1 py-3 text-xs font-medium border-b-2 border-transparent text-neutral-500 hover:text-neutral-300 transition-all">Tools</button>
+            </div>
+
+            <!-- Content Areas -->
+            <div class="flex-1 overflow-hidden relative">
+                
+                <!-- Chat Panel -->
+                <div id="panel-chat" class="absolute inset-0 flex flex-col">
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div class="flex gap-3">
+                            <div class="w-6 h-6 rounded-lg bg-neutral-800 border border-white/10 flex-shrink-0 flex items-center justify-center text-[9px] text-neutral-400">SJ</div>
+                            <div>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-[11px] font-medium text-neutral-300">Sarah J.</span>
+                                    <span class="text-[9px] text-neutral-600">10:42 AM</span>
+                                </div>
+                                <p class="text-xs text-neutral-400 mt-0.5 leading-relaxed">Professor, will this quiz cover Chapter 3?</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex-shrink-0 flex items-center justify-center text-[9px]">PM</div>
+                            <div>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-[11px] font-medium text-white">Prof. Miller</span>
+                                    <span class="text-[9px] text-neutral-600">10:43 AM</span>
+                                </div>
+                                <p class="text-xs text-neutral-300 mt-0.5 leading-relaxed">Yes, focusing mainly on thermodynamics.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Input -->
+                    <div class="p-3 border-t border-white/5 bg-[#080808]">
+                        <div class="relative group">
+                            <input type="text" placeholder="Message..." class="w-full bg-neutral-900 border border-white/10 rounded-lg pl-3 pr-9 py-2.5 text-xs text-white focus:outline-none focus:border-neutral-700 transition-colors placeholder:text-neutral-600">
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors">
+                                <iconify-icon icon="solar:plain-3-linear" width="16"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- People Panel -->
+                <div id="panel-people" class="absolute inset-0 hidden overflow-y-auto p-2">
+                    <div class="space-y-1">
+                        <div class="p-2 hover:bg-white/5 rounded-lg flex items-center justify-between group cursor-pointer">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs">PM</div>
+                                <span class="text-xs text-neutral-200">Prof. Miller (Host)</span>
+                            </div>
+                            <iconify-icon icon="solar:microphone-3-linear" class="text-neutral-500" width="14"></iconify-icon>
+                        </div>
+                        <div class="p-2 bg-white/5 rounded-lg flex items-center justify-between border border-white/5">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-neutral-800 text-neutral-300 flex items-center justify-center text-xs">Me</div>
+                                <span class="text-xs text-white font-medium">You</span>
+                            </div>
+                        </div>
+                        <div class="p-2 hover:bg-white/5 rounded-lg flex items-center justify-between group cursor-pointer">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-neutral-800 text-neutral-400 flex items-center justify-center text-xs">DK</div>
+                                <span class="text-xs text-neutral-400">David Kim</span>
+                            </div>
+                            <iconify-icon icon="solar:hand-shake-linear" class="text-blue-400" width="14"></iconify-icon>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools Panel -->
+                <div id="panel-tools" class="absolute inset-0 hidden overflow-y-auto p-4">
+                    <div class="grid grid-cols-1 gap-3">
+                        <button class="tool-card p-3 rounded-xl border border-white/5 bg-white/[0.02] flex items-center gap-3 text-left">
+                            <div class="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                                <iconify-icon icon="solar:magic-stick-3-linear" width="20"></iconify-icon>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-medium text-neutral-200">Generate Quiz</span>
+                                <span class="block text-[10px] text-neutral-500">AI-powered</span>
+                            </div>
+                        </button>
+                        <button class="tool-card p-3 rounded-xl border border-white/5 bg-white/[0.02] flex items-center gap-3 text-left">
+                            <div class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                <iconify-icon icon="solar:chart-2-linear" width="20"></iconify-icon>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-medium text-neutral-200">Create Poll</span>
+                                <span class="block text-[10px] text-neutral-500">Instant results</span>
+                            </div>
+                        </button>
+                        <button class="tool-card p-3 rounded-xl border border-white/5 bg-white/[0.02] flex items-center gap-3 text-left">
+                            <div class="w-9 h-9 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center">
+                                <iconify-icon icon="solar:black-hole-linear" width="20"></iconify-icon>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-medium text-neutral-200">Whiteboard</span>
+                                <span class="block text-[10px] text-neutral-500">Collaborative</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Overlay for mobile sidebar -->
+        <div id="sidebar-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
+    </div>
+
+    <script>
+        // --- REAL FUNCTIONALITY ---
+
+        let localStream;
+        let screenStream;
+        let isMicOn = true;
+        let isCamOn = true;
+        let isSharing = false;
+        
+        // DOM Elements for Pinning/Stage
+        const stageVideo = document.getElementById('main-stage-video');
+        const stageImage = document.getElementById('main-stage-image');
+        const stagePlaceholder = document.getElementById('stage-placeholder');
+        const unpinBtn = document.getElementById('btn-unpin');
+        const canvasTools = document.getElementById('canvas-tools');
+        
+        let currentPinnedType = null; // 'local', 'screen', 'image', or null
+
+        // Initialize Camera
+        async function startCamera() {
+            try {
+                const videoElement = document.getElementById('localVideo');
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                videoElement.srcObject = localStream;
+                updateControls();
+            } catch (err) {
+                console.error("Error accessing media devices.", err);
+                isCamOn = false;
+                isMicOn = false;
+                updateControls();
+            }
+        }
+
+        // Toggle Microphone
+        function toggleMic() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    isMicOn = !isMicOn;
+                    audioTracks[0].enabled = isMicOn;
+                    updateControls();
+                }
+            }
+        }
+
+        // Toggle Camera
+        function toggleCam() {
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                if (videoTracks.length > 0) {
+                    isCamOn = !isCamOn;
+                    videoTracks[0].enabled = isCamOn;
+                    updateControls();
+                }
+            }
+        }
+
+        // --- SCREEN SHARING ---
+        async function toggleScreenShare() {
+            if (!isSharing) {
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+                        video: { cursor: "always" }, 
+                        audio: false 
+                    });
+                    
+                    // Automatically pin screen share
+                    pinStream(screenStream, false); // false = no mirror
+                    currentPinnedType = 'screen';
+                    
+                    isSharing = true;
+                    updateShareButton();
+
+                    // Detect when user clicks "Stop Sharing" in browser UI
+                    screenStream.getVideoTracks()[0].onended = () => {
+                        stopSharing();
+                    };
+
+                } catch (err) {
+                    console.error("Error sharing screen: " + err);
+                }
+            } else {
+                stopSharing();
+            }
+        }
+
+        function stopSharing() {
+            if (screenStream) {
+                let tracks = screenStream.getTracks();
+                tracks.forEach(track => track.stop());
+                screenStream = null;
+            }
+            isSharing = false;
+            unpinContent(); // Return to default view
+            updateShareButton();
+        }
+
+        function updateShareButton() {
+            const btn = document.getElementById('btn-share');
+            const icon = document.getElementById('icon-share');
+            
+            if (isSharing) {
+                btn.className = "w-10 h-10 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 flex items-center justify-center text-emerald-500 transition-all border border-emerald-500/30 group relative";
+                icon.setAttribute('icon', 'solar:stop-circle-linear');
+            } else {
+                btn.className = "w-10 h-10 rounded-xl hover:bg-white/10 flex items-center justify-center text-white transition-all group relative";
+                icon.setAttribute('icon', 'solar:screencast-2-linear');
+            }
+        }
+
+        // --- PINNING LOGIC ---
+
+        function pinLocalUser() {
+            if (localStream) {
+                pinStream(localStream, true); // true = mirror
+                currentPinnedType = 'local';
+            }
+        }
+
+        function pinStream(stream, mirror) {
+            resetStage();
+            stageVideo.srcObject = stream;
+            stageVideo.classList.remove('hidden');
+            if (mirror) stageVideo.classList.add('mirror-mode');
+            else stageVideo.classList.remove('mirror-mode');
+            
+            showUnpinUI();
+        }
+
+        function pinImage(url) {
+            resetStage();
+            stageImage.src = url;
+            stageImage.classList.remove('hidden');
+            currentPinnedType = 'image';
+            
+            showUnpinUI();
+        }
+
+        function unpinContent() {
+            resetStage();
+            stagePlaceholder.classList.remove('hidden'); // Show default placeholder
+            unpinBtn.classList.add('hidden');
+            canvasTools.classList.remove('hidden'); // Show default tools
+            currentPinnedType = null;
+        }
+
+        function resetStage() {
+            // Hide all stage elements
+            stageVideo.classList.add('hidden');
+            stageVideo.srcObject = null;
+            stageImage.classList.add('hidden');
+            stagePlaceholder.classList.add('hidden');
+            canvasTools.classList.add('hidden'); // Hide tools on video/image
+        }
+
+        function showUnpinUI() {
+            unpinBtn.classList.remove('hidden');
+        }
+
+
+        // --- UI UTILS ---
+
+        // Update UI Icons based on state
+        function updateControls() {
+            const micBtn = document.getElementById('btn-mic');
+            const micIcon = document.getElementById('icon-mic');
+            const camBtn = document.getElementById('btn-cam');
+            const camIcon = document.getElementById('icon-cam');
+            const videoEl = document.getElementById('localVideo');
+            const placeholder = document.getElementById('camera-off-placeholder');
+
+            // Mic UI
+            if (isMicOn) {
+                micBtn.className = "w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all border border-white/5 group relative";
+                micIcon.setAttribute('icon', 'solar:microphone-3-linear');
+                document.getElementById('mic-status-icon').classList.remove('hidden');
+                document.getElementById('mic-off-icon').classList.add('hidden');
+            } else {
+                micBtn.className = "w-10 h-10 rounded-xl bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center text-red-500 transition-all border border-red-500/30 group relative";
+                micIcon.setAttribute('icon', 'solar:microphone-off-linear');
+                document.getElementById('mic-status-icon').classList.add('hidden');
+                document.getElementById('mic-off-icon').classList.remove('hidden');
+            }
+
+            // Cam UI
+            if (isCamOn) {
+                camBtn.className = "w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all border border-white/5 group relative";
+                camIcon.setAttribute('icon', 'solar:videocamera-record-linear');
+                videoEl.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                camBtn.className = "w-10 h-10 rounded-xl bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center text-red-500 transition-all border border-red-500/30 group relative";
+                camIcon.setAttribute('icon', 'solar:videocamera-off-linear');
+                videoEl.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        }
+
+        // Start Clock
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('realtime-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Tab Switching
+        function switchTab(tabName) {
+            ['chat', 'people', 'tools'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const pnl = document.getElementById(`panel-${t}`);
+                if (t === tabName) {
+                    btn.classList.remove('border-transparent', 'text-neutral-500');
+                    btn.classList.add('border-white', 'text-white', 'bg-white/5');
+                    pnl.classList.remove('hidden');
+                    pnl.classList.add('flex');
+                } else {
+                    btn.classList.add('border-transparent', 'text-neutral-500');
+                    btn.classList.remove('border-white', 'text-white', 'bg-white/5');
+                    pnl.classList.add('hidden');
+                    pnl.classList.remove('flex');
+                }
+            });
+        }
+
+        // Mobile Sidebar Toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('translate-x-full')) {
+                sidebar.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            startCamera();
+        });
+
+    </script>
+</body>
+</html>

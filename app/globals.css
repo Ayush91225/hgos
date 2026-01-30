@@ -1,0 +1,394 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+}
+
+@layer components {
+  /* Professional glass effects - Google Meet style */
+  .glass-panel {
+    @apply bg-neutral-900/95 backdrop-blur-md border border-neutral-700/50;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Completely hide Stream.io screen share overlay */
+  .str-video__screen-share-overlay {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    z-index: -1 !important;
+  }
+  
+  /* Force all video elements to be visible */
+  .str-video__video {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background: transparent !important;
+    z-index: 1 !important;
+  }
+  
+  /* Specifically target screen share videos */
+  .str-video__video--screen-share {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background: #000 !important;
+    object-fit: contain !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Hide all overlays and placeholders during screen share */
+  .str-video__speaker-layout__spotlight .str-video__video-placeholder,
+  .str-video__speaker-layout__spotlight .str-video__participant-details,
+  .str-video__speaker-layout__spotlight .str-video__call-controls__button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .glass-button {
+    @apply bg-neutral-800/80 hover:bg-neutral-700/80 border border-neutral-600/30 transition-all active:scale-95;
+    /* Professional mobile touch optimization */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-height: 44px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass-button-primary {
+    @apply bg-white text-black hover:bg-gray-100 border-transparent transition-all active:scale-95 font-medium;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-height: 44px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .glass-button-danger {
+    @apply bg-red-600/90 hover:bg-red-500/90 text-white border border-red-500/30 transition-all active:scale-95;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-height: 44px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+  }
+
+  /* Video tiles fill their containers with hardware acceleration */
+  .video-fill,
+  .video-fill .str-video__participant-view {
+    width: 100% !important;
+    height: 100% !important;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+    contain: layout style paint;
+  }
+
+  /* Professional video quality with clean rendering */
+  .video-fill video {
+    object-fit: cover !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: #1a1a1a;
+    
+    /* Clean professional enhancement */
+    filter: contrast(1.05) brightness(1.02) saturate(1.05);
+    image-rendering: optimizeQuality;
+    -webkit-image-rendering: optimizeQuality;
+    
+    /* Hardware acceleration */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0) scale3d(1,1,1);
+    will-change: transform;
+    
+    /* Professional rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    contain: layout style paint;
+  }
+
+  /* Professional WebRTC video optimization */
+  video[autoplay] {
+    filter: contrast(1.05) brightness(1.02) saturate(1.05);
+    image-rendering: optimizeQuality;
+    transform: translateZ(0) scale3d(1,1,1);
+    will-change: transform;
+    contain: strict;
+  }
+
+  /* Professional video containers */
+  .str-video__participant-view {
+    contain: layout style paint;
+    transform: translateZ(0);
+    will-change: transform;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .video-fill video {
+      /* Reduce filters on mobile for better performance */
+      filter: contrast(1.1) brightness(1.05) saturate(1.08);
+    }
+    
+    .glass-panel {
+      /* Reduce blur on mobile */
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    
+    /* Optimize touch targets */
+    button, .glass-button {
+      min-height: 48px;
+      min-width: 48px;
+    }
+  }
+
+  /* Mobile layout optimizations with premium effects */
+  @media (max-width: 768px) {
+    /* Control bar positioning fix */
+    .control-dock {
+      position: fixed;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      padding: 8px;
+      gap: 8px;
+    }
+    
+    /* Sidebar mobile positioning - FIXED */
+    .sidebar-mobile {
+      position: fixed !important;
+      top: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      max-width: 400px !important;
+      z-index: 60 !important;
+      background: rgb(23 23 23 / 0.98) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      border-left: 1px solid rgb(64 64 64 / 0.5) !important;
+      transform: translateZ(0) !important;
+    }
+    
+    /* Ensure sidebar overlay is below sidebar */
+    .sidebar-overlay {
+      z-index: 40 !important;
+    }
+    
+    /* Single column on mobile for 3+ participants */
+    .participant-grid {
+      grid-template-columns: 1fr !important;
+      gap: 4px;
+    }
+    
+    /* 2 columns for exactly 2 participants on mobile */
+    .participant-grid[data-count="2"] {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Mobile video tiles */
+    .video-tile {
+      min-height: 120px;
+    }
+    
+    /* Mobile header adjustments */
+    .meeting-header {
+      padding: 8px 12px;
+      height: 48px;
+    }
+    
+    /* Premium mobile effects */
+    .glass-panel {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    
+    /* Mobile touch improvements */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Prevent body scroll when sidebar is open */
+    body.sidebar-open {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+  }
+
+  /* Landscape mobile optimizations */
+  @media (max-width: 768px) and (orientation: landscape) {
+    .participant-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .participant-grid[data-count="3"], 
+    .participant-grid[data-count="4"] {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .participant-grid[data-count="5"], 
+    .participant-grid[data-count="6"] {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+    
+    .control-dock {
+      padding: 6px 12px;
+    }
+    
+    .meeting-header {
+      height: 40px;
+      padding: 6px 12px;
+    }
+  }
+
+  /* Participant grid optimization */
+  .participant-grid {
+    contain: layout;
+    transform: translateZ(0);
+  }
+
+  /* Glass panel GPU acceleration */
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: backdrop-filter;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.25s ease-out forwards;
+  }
+
+  .layout-transition {
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+  /* Professional animations - subtle and clean */
+  @keyframes professional-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  .professional-pulse {
+    animation: professional-pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes clean-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-up {
+    animation: clean-slide-up 0.2s ease-out;
+  }
+  
+  @keyframes clean-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .animate-fade-in {
+    animation: clean-fade-in 0.15s ease-out;
+  }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Custom Scrollbar for Webkit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
